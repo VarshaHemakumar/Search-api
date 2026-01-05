@@ -14,6 +14,7 @@ export interface IStorage {
   getPriceHistory(productId: number): Promise<PriceHistory[]>;
   createProduct(product: InsertProduct): Promise<Product>;
   addPriceHistory(history: InsertPriceHistory): Promise<PriceHistory>;
+  getProduct(id: number): Promise<Product | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -39,6 +40,11 @@ export class DatabaseStorage implements IStorage {
   async addPriceHistory(history: InsertPriceHistory): Promise<PriceHistory> {
     const [newHistory] = await db.insert(priceHistory).values(history).returning();
     return newHistory;
+  }
+
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product;
   }
 }
 

@@ -1,0 +1,59 @@
+Modify the two API endpoints to return data specifically designed for a price comparison agent with quality rules.
+
+ENDPOINT 1: /api/product-search
+- Accept query parameter: "query" (product search term)
+- Return 10 products with this EXACT structure:
+{
+  "products": [
+    {
+      "id": "string",
+      "name": "string (real brand + model)",
+      "price": number,
+      "rating": number (between 2.5 and 4.8),
+      "review_count": number,
+      "vendor": "Amazon" | "Walmart" | "Target" | "Best Buy",
+      "seller_type": "official" | "third-party",
+      "in_stock": boolean,
+      "discontinued": boolean,
+      "url": "string"
+    }
+  ],
+  "total_results": 10
+}
+
+IMPORTANT: Include these specific test cases:
+- 3 products with rating >= 4.0 (GOOD - pass quality check)
+- 2 products with rating 3.5-3.9 (BORDERLINE - pass quality check)
+- 3 products with rating < 3.5 (BAD - fail quality check)
+- 1 product with seller_type: "third-party" (unauthorized seller)
+- 1 product with discontinued: true
+
+Use real product names like "Sony WH-1000XM5", "Dell XPS 13", "Samsung Galaxy S24", etc.
+
+ENDPOINT 2: /api/price-history
+- Accept query parameter: "product_id"
+- Return price history with this EXACT structure:
+{
+  "product_id": "string",
+  "price_history": [
+    {"date": "YYYY-MM-DD", "price": number}
+  ],
+  "lowest_price_90days": number,
+  "highest_price_90days": number,
+  "average_price": number,
+  "fake_discount_detected": boolean,
+  "price_manipulation_details": "string (explanation if fake)",
+  "authorized_retailer": boolean,
+  "deal_quality_score": number (0-10),
+  "price_trend": "increasing" | "decreasing" | "stable"
+}
+
+IMPORTANT: Create 3 different response patterns based on product_id:
+- If product_id ends in "1" or "2": Clean history, fake_discount_detected: false
+- If product_id ends in "3": FAKE DISCOUNT - price jumped 24 hours ago then "on sale"
+  Example: Was $649 for months → Raised to $799 on 2025-01-03 → "Sale" $649 on 2025-01-04
+- If product_id ends in "4": unauthorized_retailer: false (gray market warning)
+
+Generate realistic 90-day price history with daily data points showing natural price fluctuations.
+
+Make sure both endpoints return proper JSON with correct CORS headers.

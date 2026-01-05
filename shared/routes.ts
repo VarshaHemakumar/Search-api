@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { products, priceHistory, insertProductSchema } from './schema';
+import { products, priceHistory } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -20,32 +20,51 @@ export const api = {
       method: 'GET' as const,
       path: '/api/product-search',
       input: z.object({
-        q: z.string().optional(),
+        query: z.string().optional(),
       }).optional(),
       responses: {
-        200: z.array(z.custom<typeof products.$inferSelect>()),
+        200: z.object({
+          products: z.array(z.object({
+            id: z.string(),
+            name: z.string(),
+            price: z.number(),
+            rating: z.number(),
+            review_count: z.number(),
+            vendor: z.enum(["Amazon", "Walmart", "Target", "Best Buy"]),
+            seller_type: z.enum(["official", "third-party"]),
+            in_stock: z.boolean(),
+            discontinued: z.boolean(),
+            url: z.string(),
+          })),
+          total_results: z.number(),
+        }),
       },
     },
     history: {
       method: 'GET' as const,
       path: '/api/price-history',
       input: z.object({
-        productId: z.coerce.number(),
+        product_id: z.string(),
       }),
       responses: {
-        200: z.array(z.custom<typeof priceHistory.$inferSelect>()),
+        200: z.object({
+          product_id: z.string(),
+          price_history: z.array(z.object({
+            date: z.string(),
+            price: z.number(),
+          })),
+          lowest_price_90days: z.number(),
+          highest_price_90days: z.number(),
+          average_price: z.number(),
+          fake_discount_detected: z.boolean(),
+          price_manipulation_details: z.string(),
+          authorized_retailer: z.boolean(),
+          deal_quality_score: z.number(),
+          price_trend: z.enum(["increasing", "decreasing", "stable"]),
+        }),
         404: errorSchemas.notFound,
       },
     },
-    create: {
-      method: 'POST' as const,
-      path: '/api/products',
-      input: insertProductSchema,
-      responses: {
-        201: z.custom<typeof products.$inferSelect>(),
-        400: errorSchemas.validation,
-      },
-    }
   },
 };
 
