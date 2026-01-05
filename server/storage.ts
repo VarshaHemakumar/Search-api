@@ -1,38 +1,45 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import {
+  products,
+  priceHistory,
+  type Product,
+  type PriceHistory,
+  type InsertProduct,
+  type InsertPriceHistory
+} from "@shared/schema";
+import { eq, ilike } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  searchProducts(query?: string): Promise<Product[]>;
+  getPriceHistory(productId: number): Promise<PriceHistory[]>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  addPriceHistory(history: InsertPriceHistory): Promise<PriceHistory>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async searchProducts(query?: string): Promise<Product[]> {
+    if (!query) {
+      return await db.select().from(products);
+    }
+    return await db.select().from(products).where(ilike(products.name, `%${query}%`));
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getPriceHistory(productId: number): Promise<PriceHistory[]> {
+    return await db.select()
+      .from(priceHistory)
+      .where(eq(priceHistory.productId, productId))
+      .orderBy(priceHistory.date);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const [newProduct] = await db.insert(products).values(product).returning();
+    return newProduct;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async addPriceHistory(history: InsertPriceHistory): Promise<PriceHistory> {
+    const [newHistory] = await db.insert(priceHistory).values(history).returning();
+    return newHistory;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
